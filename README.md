@@ -17,9 +17,10 @@ Jintao Zhang, Haofeng Huang, Pengle Zhang, Jia Wei, Jun Zhu, Jianfei Chen
 ## Current Features
 <!-- This is a beta release of SageAttention2. We welcome any feedback on accuracy, performance issues, bugs, feature requests, or suggestions. Please feel free to open an issue or launch a pull request! -->
 
-+ Optmized kernels for **Ampere, Ada and Hopper GPUs.**
++ Optmized kernels for **Turing, Ampere, Ada and Hopper GPUs.**
 + INT8 quantization and smoothing for $QK^\top$ with support for varying granularities.
-+ FP8 quantization for $PV$.
++ FP16 quantization for $PV$ (Turing, Ampere, Ada, Hopper).
++ FP8 quantization for $PV$ (Ada, Hopper).
 + Two-level accumulation strategy for $PV$ to improve accuracy in FP8 MMA and WGMMA.
 + Support `torch.compile` with non-cudagraphs mode and distributed inference.
 
@@ -58,10 +59,9 @@ Jintao Zhang, Haofeng Huang, Pengle Zhang, Jia Wei, Jun Zhu, Jianfei Chen
 ### Base environment
 + `python>=3.9`   , `torch>=2.3.0`  , `triton>=3.0.0` 
 - `CUDA`:
-  + `>=12.8` for Blackwell
-  + `>=12.4` for fp8 support on Ada
-  + `>=12.3` for fp8 support on Hopper
-  + `>=12.0` for Ampere
+  + `>=12.8` for Blackwell (Hypothetical)
+  + `>=12.0` for FP8 support on Ada (SM89) and WGMMA on Hopper (SM90)
+  + `>=11.8` recommended for Ampere (SM80, SM86) and Turing (SM75) support. Lower versions might work for specific architectures but are less tested with this project.
 + `flash-attn` for benchmarking
 
 ### Install Package
@@ -91,10 +91,11 @@ python setup.py install
 from sageattention import sageattn
 attn_output = sageattn(q, k, v, tensor_layout="HND", is_causal=False)
 ```
-+ `q, k, v` are **FP16/BF16** dtype with the shape `(batch_size, head_num, seq_len, head_dim)` using default `tensor_layout="HND"`. For shape `(batch_size, seq_len, head_num, head_dim)`, set `tensor_layout="NHD"`. 
++ `q, k, v` are **FP16** dtype (BF16 not supported on Turing SM75) with the shape `(batch_size, head_num, seq_len, head_dim)` using default `tensor_layout="HND"`. For shape `(batch_size, seq_len, head_num, head_dim)`, set `tensor_layout="NHD"`. 
 + `is_causal` determines the use of a causal mask.
 
 ### Available APIs:
++ `sageattn_qk_int8_pv_fp16_cuda_sm75`: (Turing) INT8 $QK^	op$, FP16 $PV$, FP32 accum. using CUDA. **(Requires SM75)**
 + `sageattn`: Automatically selects the optimal kernel based on the GPU to achieve a good performance-accuracy trade-off.
 + `sageattn_qk_int8_pv_fp16_triton`: INT8 quantization for $QK^\top$ and FP16 for $PV$ using Triton backend.
 + `sageattn_qk_int8_pv_fp16_cuda`: INT8 quantization for $QK^\top$ and FP16 for $PV$ using CUDA backend.
